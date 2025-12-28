@@ -132,6 +132,23 @@ The OpenBB codebase has **comprehensive existing options infrastructure** that c
 
 6. **Phase 6 (Integration)**: Create unified research workflow
 
+## Polygon.io Research (2025-12-27)
+
+**Finding: Polygon.io not a priority for options chain implementation**
+
+| Aspect | Details |
+|--------|---------|
+| **Current Status** | OpenBB has Polygon provider, but NO options support |
+| **Rebrand** | Polygon.io now Massive.com |
+| **Free Tier** | EOD options data, 5 API calls/minute (very limited) |
+| **Paid Tiers** | $29/month+ for better access |
+
+**Recommendation:** Low priority. YFinance and CBOE already provide free options data with better rate limits. Polygon.io options could be added later if specific features are needed.
+
+Sources:
+- [Polygon.io Pricing](https://polygon.io/pricing)
+- [Massive.com Pricing](https://massive.com/pricing)
+
 ## File References
 
 - Standard models: `openbb_platform/core/openbb_core/provider/standard_models/`

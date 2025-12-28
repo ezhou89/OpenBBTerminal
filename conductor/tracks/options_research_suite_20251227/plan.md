@@ -10,7 +10,7 @@
 - [x] Task: Test existing YFinance options chain fetcher with sample symbols
 - [x] Task: Test existing CBOE options chain fetcher with sample symbols
 - [x] Task: Verify Greeks are calculated correctly in existing implementation (provider-sourced)
-- [ ] Task: Research Polygon.io free tier options API availability
+- [x] Task: Research Polygon.io free tier options API availability (low priority, limited free tier)
 - [ ] Task: Conductor - User Manual Verification 'Options Infrastructure' (Protocol in workflow.md)
 
 ## Phase 2: Catalyst Calendar Integration
