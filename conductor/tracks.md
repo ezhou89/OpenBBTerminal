@@ -4,7 +4,10 @@ This file tracks all major development tracks for OpenBB Platform. Each track ha
 
 ## Active Tracks
 
-(No tracks created yet)
+## [ ] Track: Options Research Suite for Catalyst Trading
+*Link: [./conductor/tracks/options_research_suite_20251227/](./conductor/tracks/options_research_suite_20251227/)*
+*Description: Comprehensive options toolkit for trading around earnings, FDA approvals, and clinical trials*
+*Phases: 6 | Tasks: 47*
 
 ## Completed Tracks
 
