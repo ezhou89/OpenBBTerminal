@@ -6,7 +6,7 @@
 
 ## Phase 1: Validate & Extend Options Infrastructure
 
-- [x] Task: Research existing options chain implementations in OpenBB codebase
+- [x] Task: Research existing options chain implementations in OpenBB codebase (e0ae643)
 - [ ] Task: Test existing YFinance options chain fetcher with sample symbols
 - [ ] Task: Test existing CBOE options chain fetcher with sample symbols
 - [ ] Task: Verify Greeks are calculated correctly in existing implementation
