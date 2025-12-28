@@ -11,7 +11,10 @@
 - [x] Task: Test existing CBOE options chain fetcher with sample symbols
 - [x] Task: Verify Greeks are calculated correctly in existing implementation (provider-sourced)
 - [x] Task: Research Polygon.io free tier options API availability (low priority, limited free tier)
-- [ ] Task: Conductor - User Manual Verification 'Options Infrastructure' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Options Infrastructure' (Protocol in workflow.md)
+
+## Phase 1 Checkpoint [a6abe68]
+> Options infrastructure validated. YFinance, CBOE functional. Greeks provider-sourced. Polygon.io low priority.
 
 ## Phase 2: Catalyst Calendar Integration
 
