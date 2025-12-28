@@ -1,79 +1,60 @@
 # Plan: Options Research Suite for Catalyst Trading
 
-## Phase 1: Options Chain Infrastructure
+> **Note:** Research completed 2025-12-27 revealed extensive existing options infrastructure.
+> Plan updated to focus on gaps: catalyst calendars, IV analytics, and unified research workflow.
+> See [research_notes.md](research_notes.md) for full findings.
 
-- [ ] Task: Research existing options chain implementations in OpenBB codebase
-- [ ] Task: Create standard models for OptionsChain (QueryParams and Data) if not existing
-- [ ] Task: Implement Yahoo Finance options chain fetcher following TET pattern
-- [ ] Task: Write unit tests for Yahoo Finance options chain fetcher
-- [ ] Task: Implement CBOE options chain fetcher following TET pattern
-- [ ] Task: Write unit tests for CBOE options chain fetcher
-- [ ] Task: Implement Polygon.io options chain fetcher following TET pattern
-- [ ] Task: Write unit tests for Polygon.io options chain fetcher
-- [ ] Task: Add options chain router command to derivatives extension
-- [ ] Task: Conductor - User Manual Verification 'Options Chain Infrastructure' (Protocol in workflow.md)
+## Phase 1: Validate & Extend Options Infrastructure
 
-## Phase 2: Greeks Calculation Engine
+- [x] Task: Research existing options chain implementations in OpenBB codebase
+- [ ] Task: Test existing YFinance options chain fetcher with sample symbols
+- [ ] Task: Test existing CBOE options chain fetcher with sample symbols
+- [ ] Task: Verify Greeks are calculated correctly in existing implementation
+- [ ] Task: Research Polygon.io free tier options API availability
+- [ ] Task: Conductor - User Manual Verification 'Options Infrastructure' (Protocol in workflow.md)
 
-- [ ] Task: Research Black-Scholes implementation requirements and edge cases
-- [ ] Task: Create Greeks utility module with Black-Scholes pricing model
-- [ ] Task: Write comprehensive unit tests for Black-Scholes calculations
-- [ ] Task: Implement Delta, Gamma, Theta, Vega, Rho calculations
-- [ ] Task: Write unit tests validating Greeks against known benchmarks
-- [ ] Task: Add Greeks calculation to options chain data transformation
-- [ ] Task: Write integration tests for Greeks with live chain data
-- [ ] Task: Conductor - User Manual Verification 'Greeks Calculation Engine' (Protocol in workflow.md)
+## Phase 2: Catalyst Calendar Integration
 
-## Phase 3: Catalyst Calendar Integration
-
-- [ ] Task: Research free earnings calendar APIs (Yahoo Finance, FMP, others)
-- [ ] Task: Create standard models for EarningsCalendar
-- [ ] Task: Implement earnings calendar fetcher for primary provider
+- [ ] Task: Research free earnings calendar APIs (Yahoo Finance, FMP, Alpha Vantage)
+- [ ] Task: Create standard models for EarningsCalendar (QueryParams and Data)
+- [ ] Task: Implement earnings calendar fetcher for FMP or alternative provider
 - [ ] Task: Write unit tests for earnings calendar fetcher
-- [ ] Task: Research FDA calendar / biotech catalyst APIs
-- [ ] Task: Create standard models for CatalystEvent (generic)
+- [ ] Task: Research FDA calendar / ClinicalTrials.gov API
+- [ ] Task: Create standard models for CatalystEvent (generic catalyst type)
 - [ ] Task: Implement FDA/biotech catalyst fetcher
 - [ ] Task: Write unit tests for catalyst fetcher
 - [ ] Task: Create calendar router commands in appropriate extension
-- [ ] Task: Conductor - User Manual Verification 'Catalyst Calendar Integration' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Catalyst Calendar' (Protocol in workflow.md)
 
-## Phase 4: Options Screener
+## Phase 3: IV Analytics & Expected Move
 
-- [ ] Task: Design screener filter interface (QueryParams structure)
-- [ ] Task: Create OptionsScreener standard models
-- [ ] Task: Implement IV-based screening filters
-- [ ] Task: Write unit tests for IV screening logic
-- [ ] Task: Implement volume/OI screening filters
-- [ ] Task: Write unit tests for volume/OI screening logic
-- [ ] Task: Implement expiration and moneyness filters
-- [ ] Task: Write unit tests for expiration/moneyness filtering
-- [ ] Task: Implement catalyst proximity filter (options near catalyst dates)
-- [ ] Task: Write unit tests for catalyst proximity filter
+- [ ] Task: Implement IV rank calculation (current IV vs 52-week range)
+- [ ] Task: Write unit tests for IV rank calculation
+- [ ] Task: Implement IV percentile calculation (% of days IV was lower)
+- [ ] Task: Write unit tests for IV percentile calculation
+- [ ] Task: Implement expected move calculation from ATM straddle IV
+- [ ] Task: Write unit tests for expected move calculation
+- [ ] Task: Add IV analytics to options chain data or separate utility
+- [ ] Task: Conductor - User Manual Verification 'IV Analytics' (Protocol in workflow.md)
+
+## Phase 4: Catalyst-Aware Options Screener
+
+- [ ] Task: Design catalyst proximity filter interface
+- [ ] Task: Implement options screener that combines chain data with catalyst dates
+- [ ] Task: Write unit tests for catalyst proximity screening
+- [ ] Task: Implement "options before earnings" screen
+- [ ] Task: Write unit tests for earnings screen
 - [ ] Task: Create screener router command
 - [ ] Task: Conductor - User Manual Verification 'Options Screener' (Protocol in workflow.md)
 
-## Phase 5: Options Analytics
+## Phase 5: Unified Research Workflow
 
-- [ ] Task: Implement expected move calculation from ATM straddle IV
-- [ ] Task: Write unit tests for expected move calculation
-- [ ] Task: Implement IV rank and IV percentile calculations
-- [ ] Task: Write unit tests for IV rank/percentile
-- [ ] Task: Implement basic P&L scenario analysis (price at expiration)
-- [ ] Task: Write unit tests for P&L scenarios
-- [ ] Task: Implement basic strategy analysis (straddle, strangle, vertical spread)
-- [ ] Task: Write unit tests for strategy analysis
-- [ ] Task: Create analytics router commands
-- [ ] Task: Conductor - User Manual Verification 'Options Analytics' (Protocol in workflow.md)
-
-## Phase 6: Integration & Polish
-
-- [ ] Task: Create unified options research command that combines chain + Greeks + catalyst
-- [ ] Task: Add CLI integration for all new options commands
-- [ ] Task: Write integration tests for full workflow (chain -> Greeks -> screen -> analyze)
-- [ ] Task: Add comprehensive docstrings and examples to all commands
-- [ ] Task: Update platform documentation with new options features
+- [ ] Task: Create unified options research command combining chain + catalyst + IV analytics
+- [ ] Task: Write integration tests for full research workflow
+- [ ] Task: Add CLI integration for catalyst commands
+- [ ] Task: Add comprehensive docstrings and examples
 - [ ] Task: Run full test suite and fix any regressions
-- [ ] Task: Conductor - User Manual Verification 'Integration & Polish' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)
 
 ---
 
@@ -83,9 +64,24 @@
 - `[~]` - In progress
 - `[x]` - Completed (commit SHA appended, e.g., `[x] (abc1234)`)
 
+## Phase Changes from Original Plan
+
+**Removed (Already Exists):**
+- Create standard models for OptionsChain (exists in `options_chains.py`)
+- Implement Yahoo Finance/CBOE/Intrinio fetchers (all exist)
+- Greeks calculation engine (Greeks already in chain data)
+- Strategy analysis (straddle, strangle, spreads already in OptionsChainsProperties)
+
+**Refocused:**
+- Phase 1: Validate existing infrastructure, extend if gaps found
+- Phase 2: Catalyst calendar (main new development)
+- Phase 3: IV analytics (new calculations)
+- Phase 4: Catalyst-aware screener (new feature)
+- Phase 5: Integration (combine new with existing)
+
 ## Notes
 
 - Each task should follow TDD: write failing test first, then implement, then refactor
 - Commit after each task completion with appropriate commit message format
 - Run linting (`pre-commit run --all-files`) before marking tasks complete
-- Update this plan if scope changes or new tasks are discovered
+- Leverage existing `OptionsChainsProperties.filter_data()` for screener foundation

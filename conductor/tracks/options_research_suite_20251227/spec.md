@@ -94,10 +94,14 @@ A comprehensive options research toolkit designed for trading around expected ca
 
 ## Dependencies
 
-- Existing OpenBB options infrastructure (if any exists to extend)
-- Free data provider APIs (CBOE, Yahoo Finance, Polygon.io)
-- Earnings/catalyst calendar APIs (to be researched)
-- Python scientific libraries (numpy, scipy for Greeks calculations)
+- **Existing OpenBB options infrastructure (CONFIRMED):**
+  - Standard models: `OptionsChainsData`, `OptionsSnapshotsData`, `OptionsUnusualData`
+  - Providers: YFinance, CBOE, Intrinio, Tradier (all implemented)
+  - Greeks: Already included in chain data fields
+  - Strategy analysis: Built into `OptionsChainsProperties` mixin
+  - Router: `/derivatives/options/chains`, `/derivatives/options/surface`
+- Earnings/catalyst calendar APIs (to be implemented)
+- Python scientific libraries (for IV calculations)
 
 ## Data Providers to Integrate
 
