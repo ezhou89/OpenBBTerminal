@@ -72,6 +72,30 @@ The OpenBB codebase has **comprehensive existing options infrastructure** that c
 3. `GET /derivatives/options/unusual` - Unusual activity (Intrinio only)
 4. `GET /derivatives/options/snapshots` - Market snapshot (Intrinio only)
 
+## Greeks Verification (2025-12-27)
+
+**Key Finding: Greeks are PROVIDER-SOURCED, not calculated by OpenBB**
+
+| Aspect | Details |
+|--------|---------|
+| **Source** | Data providers return Greeks from their APIs |
+| **Fields** | delta, gamma, theta, vega, rho (all optional) |
+| **OpenBB calculates** | DEX, GEX from provider-supplied Greeks |
+| **`has_greeks` property** | Returns True if provider returned Greeks |
+
+**How it works:**
+1. Providers fetch Greeks from their data sources (e.g., Yahoo Finance API, CBOE data)
+2. Greeks are optional fields - some providers may not return them
+3. OpenBB uses provider Greeks to calculate:
+   - DEX (Delta Exposure) = delta * contract_size * OI * underlying_price
+   - GEX (Gamma Exposure) = gamma * contract_size * OI * price² * 0.01
+4. Intrinio offers `model` parameter to select pricing model (black_scholes or bjerk)
+
+**Implications:**
+- No need to implement Black-Scholes ourselves
+- Greeks accuracy depends on provider implementation
+- If provider doesn't supply Greeks, they'll be None
+
 ## Gap Analysis
 
 ### Already Complete (Remove from Plan)
