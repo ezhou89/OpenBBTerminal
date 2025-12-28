@@ -29,7 +29,7 @@
 - [x] Task: Create standard models for ClinicalTrials (QueryParams and Data)
 - [x] Task: Implement ClinicalTrials.gov fetcher using API v2 - NIH provider created
 - [x] Task: Write unit tests for ClinicalTrials fetcher
-- [ ] Task: Create calendar router command for clinical trials (or add to equity calendar)
+- [x] Task: Create calendar router command for clinical trials (added to equity calendar)
 - [ ] Task: Conductor - User Manual Verification 'Catalyst Calendar' (Protocol in workflow.md)
 
 > **Note:** PDUFA calendar deferred - no free API available. See research_notes.md.

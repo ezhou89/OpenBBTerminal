@@ -138,3 +138,39 @@ async def earnings(
 ) -> OBBject:
     """Get historical and upcoming company earnings releases. Includes earnings per share (EPS) and revenue data."""
     return await OBBject.from_query(Query(**locals()))
+
+
+@router.command(
+    model="ClinicalTrials",
+    examples=[
+        APIEx(parameters={"sponsor": "Pfizer", "provider": "nih"}),
+        APIEx(
+            description="Get Phase 3 clinical trials for a company.",
+            parameters={
+                "sponsor": "Moderna",
+                "phase": "phase3",
+                "provider": "nih",
+            },
+        ),
+        APIEx(
+            description="Get recruiting trials for a specific condition.",
+            parameters={
+                "condition": "breast cancer",
+                "status": "recruiting",
+                "provider": "nih",
+            },
+        ),
+    ],
+)
+async def clinical_trials(
+    cc: CommandContext,
+    provider_choices: ProviderChoices,
+    standard_params: StandardParams,
+    extra_params: ExtraParams,
+) -> OBBject:
+    """Get clinical trials from ClinicalTrials.gov.
+
+    Useful for biotech catalyst tracking around trial readouts.
+    Key fields: primary_completion_date (expected readout), phase, status.
+    """
+    return await OBBject.from_query(Query(**locals()))
