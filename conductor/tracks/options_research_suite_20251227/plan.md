@@ -34,6 +34,12 @@
 
 > **Note:** PDUFA calendar deferred - no free API available. See research_notes.md.
 
+## Phase 2 Checkpoint [7655589]
+> Catalyst calendar integration complete:
+> - Earnings calendar: 4 existing providers (FMP, Nasdaq, Seeking Alpha, TMX)
+> - Clinical trials: New NIH provider with ClinicalTrials.gov API v2
+> - PDUFA calendar: Deferred (no free API)
+
 ## Phase 3: IV Analytics & Expected Move
 
 - [ ] Task: Implement IV rank calculation (current IV vs 52-week range)
