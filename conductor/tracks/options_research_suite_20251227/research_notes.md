@@ -149,6 +149,191 @@ Sources:
 - [Polygon.io Pricing](https://polygon.io/pricing)
 - [Massive.com Pricing](https://massive.com/pricing)
 
+## Earnings Calendar Research (2025-12-27)
+
+**Finding: Comprehensive earnings calendar already exists in OpenBB**
+
+### Existing Standard Model
+
+**Location:** `openbb_platform/core/openbb_core/provider/standard_models/calendar_earnings.py`
+
+**Query Parameters:**
+- `start_date` - Start date for calendar range
+- `end_date` - End date for calendar range
+
+**Standard Data Fields:**
+- `report_date` - Date of the earnings report
+- `symbol` - Ticker symbol
+- `name` - Company name (optional)
+- `eps_previous` - EPS from same period last year
+- `eps_consensus` - Analyst consensus EPS estimate
+
+### Provider Implementations
+
+| Provider | Free? | Extra Fields | Notes |
+|----------|-------|--------------|-------|
+| **FMP** | No (API key) | eps_actual, revenue_consensus, revenue_actual, last_updated | Requires FMP API key |
+| **Nasdaq** | Yes | eps_actual, surprise_percent, num_estimates, period_ending, previous_report_date, reporting_time, market_cap | Free, rich data |
+| **Seeking Alpha** | Yes | market_cap, reporting_time, exchange, sector_id | Free, supports US/CA |
+| **TMX** | Yes | Various (Canadian focus) | Free, Canadian markets |
+
+### Router Command
+
+**Endpoint:** `GET /equity/calendar/earnings`
+
+**Example:**
+```python
+from openbb import obb
+# Get earnings for next 3 days
+earnings = obb.equity.calendar.earnings(provider="nasdaq")
+# Get earnings for specific dates
+earnings = obb.equity.calendar.earnings(
+    start_date="2024-02-01",
+    end_date="2024-02-07",
+    provider="fmp"
+)
+```
+
+### Other Calendar Types (Also Exist)
+
+| Calendar | Router | Providers |
+|----------|--------|-----------|
+| **IPO** | `/equity/calendar/ipo` | Intrinio, Nasdaq |
+| **Dividend** | `/equity/calendar/dividend` | FMP, Nasdaq |
+| **Splits** | `/equity/calendar/splits` | FMP |
+| **Events** | `/equity/calendar/events` | FMP (deprecated) |
+
+### Gap Analysis for Catalyst Calendar
+
+**Already Complete:**
+- [x] Earnings calendar standard model
+- [x] Earnings calendar providers (4 providers)
+- [x] Earnings calendar router command
+- [x] IPO, dividend, splits calendars
+
+**Still Needed:**
+- [ ] FDA approval calendar (biotech catalysts)
+- [ ] Clinical trial readout calendar (ClinicalTrials.gov)
+- [ ] Generic "catalyst" event type that combines multiple sources
+- [ ] User-defined catalyst events
+
+### Implications for Phase 2
+
+Most of Phase 2 (Catalyst Calendar Integration) is already complete for earnings. The plan should be updated to:
+
+1. ~~Research free earnings calendar APIs~~ → Already exists
+2. ~~Create standard models for EarningsCalendar~~ → Already exists
+3. ~~Implement earnings calendar fetcher~~ → Already exists (4 providers!)
+4. Research FDA calendar / ClinicalTrials.gov API → **Still needed**
+5. Create standard models for CatalystEvent → **Still needed**
+6. Implement FDA/biotech catalyst fetcher → **Still needed**
+
+## FDA Calendar / ClinicalTrials.gov Research (2025-12-27)
+
+### ClinicalTrials.gov API (FREE, Official - Recommended)
+
+**Status:** Excellent option for clinical trial catalyst tracking
+
+| Aspect | Details |
+|--------|---------|
+| **API Version** | v2.0 (REST API with OpenAPI 3.0 spec) |
+| **Base URL** | `https://clinicaltrials.gov/api/v2/studies` |
+| **Auth** | No API key required (FREE) |
+| **Format** | JSON response, ISO 8601 dates |
+
+**Key Date Fields Available:**
+- `primaryCompletionDate` - When data collection for primary outcomes completes
+- `completionDate` (study completion) - Last participant's last visit
+- `startDate` - Trial start
+- `firstPostedDate`, `lastUpdatePostedDate`, `resultsFirstPostedDate`
+
+**API Endpoints:**
+1. `GET /api/v2/studies` - Search trials with filters
+2. `GET /api/v2/studies/{NCT_ID}` - Get specific trial details
+
+**Query Parameters:**
+- `query.cond` - Condition/disease (e.g., "breast cancer")
+- `query.intr` - Intervention/drug name
+- `query.spons` - Sponsor/company name
+- `filter.overallStatus` - Recruitment status
+- Date range syntax: `AREA[LastUpdatePostDate]RANGE[2023-01-15,MAX]`
+
+**Python Package:** `pytrials` available on PyPI
+```python
+from pytrials.client import ClinicalTrials
+ct = ClinicalTrials()
+# Get studies by search term
+studies = ct.get_full_studies(search_expr="Pfizer", max_studies=50)
+```
+
+**Use Case for Catalyst Trading:**
+- Query trials by company/drug name
+- Get Primary Completion Date for upcoming readouts
+- Filter by phase (Phase 3 for major catalysts)
+- Track trial status changes
+
+### openFDA API (FREE, Official - Limited Use)
+
+**Status:** Useful for historical data, NOT for upcoming approvals
+
+| Aspect | Details |
+|--------|---------|
+| **Base URL** | `https://api.fda.gov/drug/` |
+| **Auth** | No API key required (FREE) |
+| **Rate Limits** | 240 requests/minute without key |
+
+**Available Endpoints:**
+1. `/drug/event` - Adverse event reports
+2. `/drug/label` - Drug labeling/prescribing info
+3. `/drug/ndc` - NDC Directory
+4. `/drug/enforcement` - Recall reports
+5. `/drug/drugsfda` - Historical approvals since 1939
+
+**Key Limitation:** No upcoming PDUFA dates or pending approvals. Only historical data.
+
+### PDUFA Calendar Services (Commercial - Not Recommended)
+
+**Status:** No free API available for upcoming FDA approval dates
+
+| Service | Free Tier | API Available |
+|---------|-----------|---------------|
+| FDA Tracker | Limited | Unknown |
+| RTTNews | Trial only | Paid |
+| BiopharmIQ | Limited | Paid |
+| BioPharmCatalyst | Limited | Unknown |
+| Unusual Whales | Partial | Unknown |
+
+**Why Not Recommended:**
+- Most require paid subscriptions
+- No documented free Python API
+- Would require web scraping (ToS concerns)
+- Out of scope for "free providers" requirement
+
+### Recommendations for Phase 2
+
+1. **Implement ClinicalTrials.gov fetcher** (HIGH PRIORITY)
+   - Free, official API with rich data
+   - Primary Completion Date ideal for catalyst tracking
+   - Can filter by company/drug to get relevant trials
+   - pytrials package simplifies implementation
+
+2. **Skip PDUFA calendar for now** (DEFERRED)
+   - No free API available
+   - Could add later if paid provider integration requested
+
+3. **Use openFDA for supplemental data** (LOW PRIORITY)
+   - Historical approval context
+   - Drug labeling information
+
+### Integration with Options Research
+
+**Workflow for catalyst-aware options trading:**
+1. Query ClinicalTrials.gov for company's active trials
+2. Get Primary Completion Dates for Phase 3 trials
+3. Combine with existing earnings calendar
+4. Screen options expiring after catalyst dates
+5. Analyze IV around expected readout dates
+
 ## File References
 
 - Standard models: `openbb_platform/core/openbb_core/provider/standard_models/`
@@ -157,3 +342,5 @@ Sources:
 - Intrinio: `openbb_platform/providers/intrinio/openbb_intrinio/models/options_chains.py`
 - Router: `openbb_platform/extensions/derivatives/openbb_derivatives/options/options_router.py`
 - Views: `openbb_platform/extensions/derivatives/openbb_derivatives/derivatives_views.py`
+- Earnings Calendar: `openbb_platform/core/openbb_core/provider/standard_models/calendar_earnings.py`
+- Calendar Router: `openbb_platform/extensions/equity/openbb_equity/calendar/calendar_router.py`

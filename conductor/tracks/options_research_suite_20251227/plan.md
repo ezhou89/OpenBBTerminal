@@ -18,16 +18,21 @@
 
 ## Phase 2: Catalyst Calendar Integration
 
-- [ ] Task: Research free earnings calendar APIs (Yahoo Finance, FMP, Alpha Vantage)
-- [ ] Task: Create standard models for EarningsCalendar (QueryParams and Data)
-- [ ] Task: Implement earnings calendar fetcher for FMP or alternative provider
-- [ ] Task: Write unit tests for earnings calendar fetcher
-- [ ] Task: Research FDA calendar / ClinicalTrials.gov API
-- [ ] Task: Create standard models for CatalystEvent (generic catalyst type)
-- [ ] Task: Implement FDA/biotech catalyst fetcher
-- [ ] Task: Write unit tests for catalyst fetcher
-- [ ] Task: Create calendar router commands in appropriate extension
+> **Note:** Research completed 2025-12-27 revealed earnings calendar already fully implemented.
+> 4 providers exist: FMP, Nasdaq, Seeking Alpha, TMX. See [research_notes.md](research_notes.md).
+
+- [x] Task: Research free earnings calendar APIs (Yahoo Finance, FMP, Alpha Vantage) - ALREADY EXISTS
+- [x] Task: Create standard models for EarningsCalendar (QueryParams and Data) - ALREADY EXISTS at calendar_earnings.py
+- [x] Task: Implement earnings calendar fetcher for FMP or alternative provider - ALREADY EXISTS (4 providers!)
+- [x] Task: Write unit tests for earnings calendar fetcher - Tests exist for all 4 providers
+- [x] Task: Research FDA calendar / ClinicalTrials.gov API - ClinicalTrials.gov API v2 recommended (free, official)
+- [ ] Task: Create standard models for ClinicalTrials (QueryParams and Data)
+- [ ] Task: Implement ClinicalTrials.gov fetcher using API v2
+- [ ] Task: Write unit tests for ClinicalTrials fetcher
+- [ ] Task: Create calendar router command for clinical trials
 - [ ] Task: Conductor - User Manual Verification 'Catalyst Calendar' (Protocol in workflow.md)
+
+> **Note:** PDUFA calendar deferred - no free API available. See research_notes.md.
 
 ## Phase 3: IV Analytics & Expected Move
 
