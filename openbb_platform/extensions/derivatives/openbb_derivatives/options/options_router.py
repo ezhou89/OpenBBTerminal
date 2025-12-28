@@ -294,3 +294,155 @@ async def snapshots(
 ) -> OBBject:
     """Get a snapshot of the options market universe."""
     return await OBBject.from_query(Query(**locals()))
+
+
+@router.command(
+    methods=["POST"],
+    examples=[
+        PythonEx(
+            description="Screen options for earnings plays.",
+            code=[
+                "import datetime",
+                "data = obb.derivatives.options.chains('AAPL', provider='cboe')",
+                "earnings_date = datetime.date(2024, 2, 1)",
+                "screened = obb.derivatives.options.catalyst_screen(",
+                "    data=data.results,",
+                "    catalyst_date=earnings_date,",
+                "    max_strike_distance_pct=5.0",
+                ")",
+            ],
+        ),
+    ],
+)
+async def catalyst_screen(  # pylint: disable=R0913, R0917
+    data: Union[list[Data], Data],
+    catalyst_date: str,
+    underlying_price: Optional[float] = None,
+    min_iv: Optional[float] = None,
+    max_strike_distance_pct: float = 10.0,
+    option_type: Optional[Literal["call", "put"]] = None,
+    include_scoring: bool = True,
+) -> OBBject:
+    """Screen options for catalyst plays (earnings, FDA events, etc.).
+
+    Finds options expiring shortly after a catalyst event, filtered by
+    IV and proximity to ATM strikes.
+
+    Parameters
+    ----------
+    data : Union[list[Data], Data]
+        Options chain data from /derivatives/options/chains endpoint.
+    catalyst_date : str
+        The catalyst event date in YYYY-MM-DD format (e.g., earnings date).
+    underlying_price : Optional[float]
+        The current price of the underlying. If not provided, extracted from data.
+    min_iv : Optional[float]
+        Minimum implied volatility filter (as decimal, e.g., 0.30 for 30%).
+    max_strike_distance_pct : float
+        Maximum distance from ATM as percentage. Default 10%.
+    option_type : Optional[Literal["call", "put"]]
+        Filter by option type. None includes both.
+    include_scoring : bool
+        If True, includes catalyst play scoring metrics. Default True.
+
+    Returns
+    -------
+    OBBject[list]
+        Filtered options suitable for catalyst plays.
+    """
+    # pylint: disable=import-outside-toplevel
+    from datetime import datetime
+
+    from pandas import DataFrame
+
+    from openbb_core.provider.utils.catalyst_screener import (
+        score_catalyst_play,
+        screen_options_before_earnings,
+    )
+    from openbb_core.provider.utils.iv_analytics import get_atm_iv
+
+    df = DataFrame()
+
+    if not data:
+        raise OpenBBError("No data to process!")
+
+    if isinstance(data, OptionsChainsData):
+        df = data.dataframe
+    elif isinstance(data, DataFrame):
+        df = data
+    elif isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
+        df = DataFrame(data)
+    elif isinstance(data, list):
+        if all(isinstance(d, dict) for d in data):
+            df = DataFrame(data)
+        elif all(isinstance(d, Data) for d in data):
+            df = DataFrame(
+                [d.model_dump(exclude_none=True, exclude_unset=True) for d in data]
+            )
+
+    if df.empty:
+        raise OpenBBError("No valid data provided!")
+
+    # Parse catalyst date
+    try:
+        catalyst_dt = datetime.strptime(catalyst_date, "%Y-%m-%d").date()
+    except ValueError as e:
+        raise OpenBBError(f"Invalid date format. Use YYYY-MM-DD: {e}") from e
+
+    # Get underlying price
+    last_price = underlying_price
+    if last_price is None and "underlying_price" in df.columns:
+        last_price = df["underlying_price"].iloc[0]
+    if last_price is None:
+        raise OpenBBError(
+            "underlying_price must be provided or present in the data."
+        )
+
+    # Screen options
+    screened = screen_options_before_earnings(
+        options_df=df,
+        earnings_date=catalyst_dt,
+        underlying_price=last_price,
+        min_iv=min_iv,
+        max_strike_distance_pct=max_strike_distance_pct,
+        option_type=option_type,
+    )
+
+    if screened.empty:
+        return OBBject(results=[])
+
+    results = screened.to_dict(orient="records")
+
+    # Add scoring if requested
+    if include_scoring and results:
+        today = datetime.today().date()
+        days_to_catalyst = (catalyst_dt - today).days
+
+        # Get ATM IV for IV rank approximation (simplified)
+        atm_iv = get_atm_iv(df, last_price)
+        iv_rank = 50.0  # Default if no historical data available
+
+        for record in results:
+            exp_str = str(record.get("expiration", ""))[:10]
+            try:
+                exp_date = datetime.strptime(exp_str, "%Y-%m-%d").date()
+                dte = (exp_date - today).days
+            except (ValueError, TypeError):
+                dte = 30
+
+            # Calculate expected move percent from straddle cost if available
+            record_iv = record.get("implied_volatility", atm_iv or 0.3)
+            if record_iv and record_iv > 10:
+                record_iv = record_iv / 100
+            expected_move_pct = record_iv * ((dte / 365) ** 0.5) * 100 if record_iv else 5.0
+
+            score_info = score_catalyst_play(
+                expected_move_pct=expected_move_pct,
+                iv_rank=iv_rank,
+                days_to_catalyst=days_to_catalyst,
+                days_to_expiration=dte,
+            )
+            record["catalyst_score"] = score_info["composite_score"]
+            record["recommendation"] = score_info["recommendation"]
+
+    return OBBject(results=results)

@@ -42,33 +42,56 @@
 
 ## Phase 3: IV Analytics & Expected Move
 
-- [ ] Task: Implement IV rank calculation (current IV vs 52-week range)
-- [ ] Task: Write unit tests for IV rank calculation
-- [ ] Task: Implement IV percentile calculation (% of days IV was lower)
-- [ ] Task: Write unit tests for IV percentile calculation
-- [ ] Task: Implement expected move calculation from ATM straddle IV
-- [ ] Task: Write unit tests for expected move calculation
-- [ ] Task: Add IV analytics to options chain data or separate utility
+- [x] Task: Implement IV rank calculation (current IV vs 52-week range)
+- [x] Task: Write unit tests for IV rank calculation
+- [x] Task: Implement IV percentile calculation (% of days IV was lower)
+- [x] Task: Write unit tests for IV percentile calculation
+- [x] Task: Implement expected move calculation from ATM straddle IV
+- [x] Task: Write unit tests for expected move calculation
+- [x] Task: Add IV analytics to options chain data or separate utility
 - [ ] Task: Conductor - User Manual Verification 'IV Analytics' (Protocol in workflow.md)
+
+## Phase 3 Checkpoint
+> IV Analytics complete:
+> - Utility module: `openbb_core/provider/utils/iv_analytics.py`
+> - Functions: calculate_iv_rank, calculate_iv_percentile, calculate_expected_move, get_atm_iv, iv_term_structure
+> - Integration: Added atm_iv(), term_structure(), expected_move() methods to OptionsChainsProperties
+> - Tests: 35 unit tests covering all functions
 
 ## Phase 4: Catalyst-Aware Options Screener
 
-- [ ] Task: Design catalyst proximity filter interface
-- [ ] Task: Implement options screener that combines chain data with catalyst dates
-- [ ] Task: Write unit tests for catalyst proximity screening
-- [ ] Task: Implement "options before earnings" screen
-- [ ] Task: Write unit tests for earnings screen
-- [ ] Task: Create screener router command
+- [x] Task: Design catalyst proximity filter interface
+- [x] Task: Implement options screener that combines chain data with catalyst dates
+- [x] Task: Write unit tests for catalyst proximity screening
+- [x] Task: Implement "options before earnings" screen
+- [x] Task: Write unit tests for earnings screen
+- [x] Task: Create screener router command
 - [ ] Task: Conductor - User Manual Verification 'Options Screener' (Protocol in workflow.md)
+
+## Phase 4 Checkpoint
+> Catalyst screener complete:
+> - Utility module: `openbb_core/provider/utils/catalyst_screener.py`
+> - Functions: filter_by_catalyst_proximity, find_nearest_post_catalyst_expiration,
+>   screen_options_before_earnings, calculate_earnings_iv_premium, score_catalyst_play,
+>   combine_catalysts_with_options
+> - Router command: `/derivatives/options/catalyst_screen` added to options_router.py
+> - Tests: 28 unit tests covering all utility functions
 
 ## Phase 5: Unified Research Workflow
 
-- [ ] Task: Create unified options research command combining chain + catalyst + IV analytics
-- [ ] Task: Write integration tests for full research workflow
-- [ ] Task: Add CLI integration for catalyst commands
-- [ ] Task: Add comprehensive docstrings and examples
-- [ ] Task: Run full test suite and fix any regressions
+- [x] Task: Create unified options research command combining chain + catalyst + IV analytics
+- [x] Task: Write integration tests for full research workflow
+- [x] Task: Add CLI integration for catalyst commands (via router commands)
+- [x] Task: Add comprehensive docstrings and examples
+- [x] Task: Run full test suite and fix any regressions
 - [ ] Task: Conductor - User Manual Verification 'Integration' (Protocol in workflow.md)
+
+## Phase 5 Checkpoint
+> Unified research workflow complete:
+> - Utility module: `openbb_core/provider/utils/options_research.py`
+> - Functions: build_research_summary, format_research_report
+> - Features: IV metrics, catalyst integration, strategy suggestions, expected moves
+> - Tests: 77 total tests across all modules (35 IV + 28 screener + 14 research)
 
 ---
 

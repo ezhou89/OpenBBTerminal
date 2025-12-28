@@ -1853,3 +1853,175 @@ class OptionsChainsProperties(Data):
         skew_df["Expiration"] = skew_df["Expiration"].astype(str)
 
         return skew_df
+
+    def atm_iv(
+        self,
+        expiration: Optional[str] = None,
+        underlying_price: Optional[float] = None,
+    ) -> Optional[float]:
+        """Get the at-the-money implied volatility.
+
+        Parameters
+        ----------
+        expiration : Optional[str]
+            Specific expiration date (YYYY-MM-DD format). If None, uses nearest expiration.
+        underlying_price : Optional[float]
+            The underlying price. If None, uses price from data.
+
+        Returns
+        -------
+        Optional[float]
+            The ATM implied volatility, or None if not available.
+        """
+        # pylint: disable=import-outside-toplevel
+        from openbb_core.provider.utils.iv_analytics import get_atm_iv
+
+        df = self.dataframe
+        if df.empty:
+            return None
+
+        price = (
+            underlying_price
+            if underlying_price is not None
+            else df.underlying_price.iloc[0] if hasattr(df, "underlying_price") else None
+        )
+
+        if price is None:
+            return None
+
+        return get_atm_iv(df, price, expiration)
+
+    def term_structure(
+        self,
+        underlying_price: Optional[float] = None,
+    ) -> "DataFrame":
+        """Get the IV term structure (ATM IV by expiration).
+
+        Parameters
+        ----------
+        underlying_price : Optional[float]
+            The underlying price. If None, uses price from data.
+
+        Returns
+        -------
+        DataFrame
+            DataFrame with expiration dates and corresponding ATM IV values.
+        """
+        # pylint: disable=import-outside-toplevel
+        from pandas import DataFrame
+
+        from openbb_core.provider.utils.iv_analytics import iv_term_structure
+
+        df = self.dataframe
+        if df.empty:
+            return DataFrame()
+
+        price = (
+            underlying_price
+            if underlying_price is not None
+            else df.underlying_price.iloc[0] if hasattr(df, "underlying_price") else None
+        )
+
+        if price is None:
+            return DataFrame()
+
+        return iv_term_structure(df, price)
+
+    def expected_move(
+        self,
+        days: Optional[int] = None,
+        use_straddle: bool = True,
+        underlying_price: Optional[float] = None,
+    ) -> Dict:
+        """Calculate the expected move for a given expiration.
+
+        Parameters
+        ----------
+        days : Optional[int]
+            Target days to expiration. If None, uses nearest expiration.
+        use_straddle : bool
+            If True, calculates expected move from ATM straddle price.
+            If False, uses IV-based calculation. Default is True.
+        underlying_price : Optional[float]
+            The underlying price. If None, uses price from data.
+
+        Returns
+        -------
+        Dict
+            Dictionary containing:
+            - expected_move: The dollar amount of expected move
+            - expected_move_percent: The expected move as a percentage
+            - lower_bound: Lower price bound (1 standard deviation)
+            - upper_bound: Upper price bound (1 standard deviation)
+            - method: 'straddle' or 'iv'
+        """
+        # pylint: disable=import-outside-toplevel
+        from openbb_core.provider.utils.iv_analytics import (
+            calculate_expected_move,
+            calculate_expected_move_from_straddle,
+        )
+
+        df = self.dataframe
+        if df.empty:
+            return {}
+
+        price = (
+            underlying_price
+            if underlying_price is not None
+            else df.underlying_price.iloc[0] if hasattr(df, "underlying_price") else None
+        )
+
+        if price is None:
+            return {}
+
+        if days is None:
+            days = 30
+
+        expiration = self._get_nearest_expiration(days)
+        exp_df = df[df.expiration.astype(str) == expiration]
+        if exp_df.empty:
+            return {}
+
+        dte = exp_df["dte"].iloc[0] if "dte" in exp_df.columns else days
+
+        if use_straddle:
+            try:
+                straddle_result = self.straddle(days=days, underlying_price=price)
+                straddle_cost = abs(straddle_result.loc["Cost"].values[0])
+                move, pct, (low, high) = calculate_expected_move_from_straddle(
+                    straddle_cost, price
+                )
+                return {
+                    "expiration": expiration,
+                    "dte": dte,
+                    "expected_move": move,
+                    "expected_move_percent": pct,
+                    "lower_bound": low,
+                    "upper_bound": high,
+                    "method": "straddle",
+                }
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+
+        # Fallback to IV-based calculation
+        atm_iv_value = self.atm_iv(expiration=expiration, underlying_price=price)
+        if atm_iv_value is None:
+            return {}
+
+        # Normalize IV if it appears to be in percentage form (> 10)
+        if atm_iv_value > 10:
+            atm_iv_value = atm_iv_value / 100
+
+        move, pct, (low, high) = calculate_expected_move(
+            price, atm_iv_value, dte
+        )
+
+        return {
+            "expiration": expiration,
+            "dte": dte,
+            "expected_move": move,
+            "expected_move_percent": pct,
+            "lower_bound": low,
+            "upper_bound": high,
+            "method": "iv",
+        }
