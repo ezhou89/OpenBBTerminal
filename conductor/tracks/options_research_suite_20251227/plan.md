@@ -26,10 +26,10 @@
 - [x] Task: Implement earnings calendar fetcher for FMP or alternative provider - ALREADY EXISTS (4 providers!)
 - [x] Task: Write unit tests for earnings calendar fetcher - Tests exist for all 4 providers
 - [x] Task: Research FDA calendar / ClinicalTrials.gov API - ClinicalTrials.gov API v2 recommended (free, official)
-- [ ] Task: Create standard models for ClinicalTrials (QueryParams and Data)
-- [ ] Task: Implement ClinicalTrials.gov fetcher using API v2
-- [ ] Task: Write unit tests for ClinicalTrials fetcher
-- [ ] Task: Create calendar router command for clinical trials
+- [x] Task: Create standard models for ClinicalTrials (QueryParams and Data)
+- [x] Task: Implement ClinicalTrials.gov fetcher using API v2 - NIH provider created
+- [x] Task: Write unit tests for ClinicalTrials fetcher
+- [ ] Task: Create calendar router command for clinical trials (or add to equity calendar)
 - [ ] Task: Conductor - User Manual Verification 'Catalyst Calendar' (Protocol in workflow.md)
 
 > **Note:** PDUFA calendar deferred - no free API available. See research_notes.md.
