@@ -446,3 +446,253 @@ async def catalyst_screen(  # pylint: disable=R0913, R0917
             record["recommendation"] = score_info["recommendation"]
 
     return OBBject(results=results)
+
+
+@router.command(
+    methods=["POST"],
+    examples=[
+        PythonEx(
+            description="Get comprehensive options research for a symbol.",
+            code=[
+                "data = obb.derivatives.options.chains('AAPL', provider='cboe')",
+                "research = obb.derivatives.options.research_summary(",
+                "    data=data.results,",
+                "    symbol='AAPL',",
+                ")",
+            ],
+        ),
+    ],
+)
+async def research_summary(  # pylint: disable=R0913, R0914, R0915, R0917
+    data: Union[list[Data], Data],
+    symbol: str,
+    underlying_price: Optional[float] = None,
+    earnings_date: Optional[str] = None,
+    max_strike_distance_pct: float = 10.0,
+    expiration_window_days: int = 45,
+) -> OBBject:
+    """Get a comprehensive options research summary for beginners.
+
+    Combines options chain data, IV analytics, catalyst information, and
+    trade ideas into a single, easy-to-understand response.
+
+    Parameters
+    ----------
+    data : Union[list[Data], Data]
+        Options chain data from /derivatives/options/chains endpoint.
+    symbol : str
+        The ticker symbol being researched.
+    underlying_price : Optional[float]
+        The current price of the underlying. If not provided, extracted from data.
+    earnings_date : Optional[str]
+        Next earnings date in YYYY-MM-DD format. If not provided, will be None.
+    max_strike_distance_pct : float
+        Maximum distance from ATM for trade ideas. Default 10%.
+    expiration_window_days : int
+        Maximum days to expiration to consider. Default 45.
+
+    Returns
+    -------
+    OBBject[dict]
+        Comprehensive research summary with:
+        - symbol, price, timestamp
+        - catalyst (type, date, days_until, timing)
+        - iv_metrics (atm_iv, rank, percentile, environment)
+        - expected_move (dollars, percent, range)
+        - trade_ideas (strategies with legs, P/L, rationale)
+        - quality (score, stars, summary)
+        - plain_english (human-readable summary)
+    """
+    # pylint: disable=import-outside-toplevel
+    from datetime import datetime
+
+    from pandas import DataFrame
+
+    from openbb_core.provider.utils.catalyst_screener import (
+        find_nearest_post_catalyst_expiration,
+        score_catalyst_play,
+    )
+    from openbb_core.provider.utils.iv_analytics import (
+        calculate_expected_move,
+        get_atm_iv,
+    )
+    from openbb_core.provider.utils.options_research import (
+        build_research_summary,
+        format_research_report,
+    )
+
+    df = DataFrame()
+
+    if not data:
+        raise OpenBBError("No data to process!")
+
+    if isinstance(data, OptionsChainsData):
+        df = data.dataframe
+    elif isinstance(data, DataFrame):
+        df = data
+    elif isinstance(data, dict) and all(isinstance(v, list) for v in data.values()):
+        df = DataFrame(data)
+    elif isinstance(data, list):
+        if all(isinstance(d, dict) for d in data):
+            df = DataFrame(data)
+        elif all(isinstance(d, Data) for d in data):
+            df = DataFrame(
+                [d.model_dump(exclude_none=True, exclude_unset=True) for d in data]
+            )
+
+    if df.empty:
+        raise OpenBBError("No valid data provided!")
+
+    # Get underlying price
+    last_price = underlying_price
+    if last_price is None and "underlying_price" in df.columns:
+        last_price = df["underlying_price"].iloc[0]
+    if last_price is None:
+        raise OpenBBError(
+            "underlying_price must be provided or present in the data."
+        )
+
+    today = datetime.today().date()
+
+    # Get expirations
+    expirations = []
+    if "expiration" in df.columns:
+        expirations = sorted(df["expiration"].astype(str).str[:10].unique().tolist())
+        # Filter by expiration window
+        valid_exps = []
+        for exp in expirations:
+            try:
+                exp_date = datetime.strptime(exp, "%Y-%m-%d").date()
+                if 0 <= (exp_date - today).days <= expiration_window_days:
+                    valid_exps.append(exp)
+            except ValueError:
+                continue
+        expirations = valid_exps
+
+    # Get ATM IV
+    atm_iv = get_atm_iv(df, last_price)
+    if atm_iv is not None and atm_iv > 10:
+        atm_iv = atm_iv / 100  # Normalize
+
+    # Parse earnings date
+    earnings_dt = None
+    if earnings_date:
+        try:
+            earnings_dt = datetime.strptime(earnings_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+    # Build research summary using existing utility
+    summary = build_research_summary(
+        symbol=symbol,
+        underlying_price=last_price,
+        options_expirations=expirations,
+        earnings_date=earnings_dt,
+        atm_iv=atm_iv,
+        iv_rank=None,  # Would need historical data
+        iv_percentile=None,  # Would need historical data
+    )
+
+    # Build response in frontend-friendly format
+    result = {
+        "symbol": symbol,
+        "price": last_price,
+        "timestamp": datetime.now().isoformat(),
+        "catalyst": {
+            "type": "none",
+            "date": None,
+            "days_until": None,
+            "timing": None,
+        },
+        "iv_metrics": {
+            "atm_iv": atm_iv,
+            "rank": None,
+            "percentile": None,
+            "environment": summary.get("overview", {}).get("iv_environment", "unknown"),
+        },
+        "expected_move": {
+            "dollars": None,
+            "percent": None,
+            "range": None,
+        },
+        "trade_ideas": [],
+        "quality": {
+            "score": 0,
+            "stars": 0,
+            "summary": "Unable to score without catalyst date",
+        },
+        "plain_english": "",
+    }
+
+    # Populate catalyst info
+    if summary.get("catalysts"):
+        first_catalyst = summary["catalysts"][0]
+        result["catalyst"] = {
+            "type": first_catalyst.get("type", "event"),
+            "date": first_catalyst.get("date"),
+            "days_until": first_catalyst.get("days_until"),
+            "timing": None,  # Would need additional data
+        }
+
+    # Populate expected move
+    if atm_iv is not None:
+        for key in ["expected_move_7d", "expected_move_30d"]:
+            if key in summary.get("overview", {}):
+                em = summary["overview"][key]
+                result["expected_move"] = {
+                    "dollars": em.get("dollars"),
+                    "percent": em.get("percent"),
+                    "range": list(em.get("range", [])) if em.get("range") else None,
+                }
+                break
+
+    # Build trade ideas from strategy suggestions
+    for idea in summary.get("strategy_ideas", [])[:3]:
+        strategy = idea.get("strategy", "")
+        trade_idea = {
+            "strategy": strategy,
+            "legs": [],  # Would need to calculate specific strikes
+            "expiration": None,
+            "max_profit": None,
+            "max_risk": None,
+            "rationale": idea.get("rationale", ""),
+        }
+
+        # Find best expiration for this strategy
+        if earnings_dt and expirations:
+            best_exp = find_nearest_post_catalyst_expiration(expirations, earnings_dt)
+            if best_exp:
+                trade_idea["expiration"] = best_exp
+
+        result["trade_ideas"].append(trade_idea)
+
+    # Calculate quality score
+    if earnings_dt and atm_iv:
+        days_to_catalyst = (earnings_dt - today).days
+        # Use first expiration after catalyst if available
+        dte = 30
+        if result["trade_ideas"] and result["trade_ideas"][0].get("expiration"):
+            try:
+                exp_date = datetime.strptime(
+                    result["trade_ideas"][0]["expiration"], "%Y-%m-%d"
+                ).date()
+                dte = (exp_date - today).days
+            except ValueError:
+                pass
+
+        score_info = score_catalyst_play(
+            expected_move_pct=result["expected_move"]["percent"] or 5.0,
+            iv_rank=50.0,  # Default without historical data
+            days_to_catalyst=days_to_catalyst,
+            days_to_expiration=dte,
+        )
+        result["quality"] = {
+            "score": score_info["composite_score"],
+            "stars": min(5, max(1, int(score_info["composite_score"] / 20) + 1)),
+            "summary": score_info["recommendation"],
+        }
+
+    # Generate plain English summary
+    result["plain_english"] = format_research_report(summary)
+
+    return OBBject(results=result)

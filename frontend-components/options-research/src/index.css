@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --gauge-value: 0;
+  }
+}
+
+@layer components {
+  .panel-card {
+    @apply bg-grey-800 rounded-lg border border-grey-700 p-4;
+  }
+
+  .btn-primary {
+    @apply bg-burgundy-500 hover:bg-burgundy-400 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-grey-700 hover:bg-grey-600 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .input-field {
+    @apply bg-grey-850 border border-grey-700 rounded-lg px-3 py-2 text-white placeholder-grey-500 focus:outline-none focus:border-burgundy-400;
+  }
+
+  .gauge-track {
+    stroke: theme("colors.grey.700");
+    stroke-width: 8;
+    fill: none;
+  }
+
+  .gauge-fill {
+    stroke-linecap: round;
+    stroke-width: 8;
+    fill: none;
+    transition: stroke-dashoffset 1s ease-out;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: theme("colors.grey.850");
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme("colors.grey.600");
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: theme("colors.grey.500");
+}
